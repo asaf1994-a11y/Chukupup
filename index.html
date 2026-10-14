@@ -1,8 +1,17 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6B3FA0">
 <title>מיון ציוד לצ׳וקופופ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Heebo:wght@400;500;700&display=swap">
 <style>
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 /* Layout: one-screen app — top bar (back + progress), a card deck in the middle, action row at the bottom; follow-up questions slide up as a sheet over the deck */
 :root{
   --bg:#EEF1F7; --surface:#FFFFFF; --ink:#1D2233; --muted:#66708A; --line:#D9DEEA;
@@ -60,7 +69,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
 .sheet h2{font-family:var(--f-display);font-weight:400;font-size:28px;margin:0}
 .sheet .for{font-size:14px;color:var(--muted);margin:0}
 .opts{display:grid;gap:10px}
-.opts.qty{grid-template-columns:repeat(4,1fr)}
+.opts.qty{grid-template-columns:repeat(3,1fr)}
 .opt{border:2px solid var(--line);background:var(--bg);border-radius:14px;padding:14px;font-size:18px;font-weight:500;text-align:center}
 .opts:not(.qty) .opt{text-align:right;display:flex;align-items:center;gap:12px}
 .opt.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
@@ -91,8 +100,35 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
 details summary{cursor:pointer;color:var(--muted);font-size:14px}
 textarea{width:100%;box-sizing:border-box;height:120px;margin-top:8px;font:12px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;direction:rtl}
 @media (prefers-reduced-motion:reduce){.card.anim,.bar>i{transition:none}}
+.welcome{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;align-items:center;justify-content:center;padding-inline:24px;padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));overflow:hidden}
+.welcome::before,.welcome::after{content:"";position:absolute;border-radius:50%;filter:blur(40px);opacity:.55;pointer-events:none}
+.welcome::before{width:320px;height:320px;background:var(--accent-soft);top:-80px;right:-90px}
+.welcome::after{width:280px;height:280px;background:var(--yes-soft);bottom:-70px;left:-80px}
+.w-in{position:relative;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;animation:wUp .7s ease both}
+.w-heart{font-size:56px;line-height:1;animation:beat 1.6s ease-in-out infinite}
+.w-in h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,13vw,60px);line-height:1.05;margin:0;color:var(--accent);text-wrap:balance}
+.w-in .l2{font-family:var(--f-display);font-size:28px;margin:0}
+.w-in .l3{font-size:19px;line-height:1.6;margin:0;color:var(--ink)}
+.w-in .sig{font-family:var(--f-display);font-size:24px;color:var(--accent)}
+.w-in .primary{width:100%;padding:16px;font-size:18px;border-radius:16px;margin-top:12px}
+.w-in .sub{font-size:13px;color:var(--muted);margin:0}
+@keyframes wUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.w-in,.w-heart{animation:none}}
 </style>
+</head>
+<body>
 
+<div class="welcome" id="welcome">
+  <div class="w-in">
+    <div class="w-heart" aria-hidden="true">❤️</div>
+    <h1>מזל טוב!</h1>
+    <p class="l2">בשעה טובה ❤️</p>
+    <p class="l3">מאחל לכם רק טוב,<br><span class="sig">ספקו ❤️</span></p>
+    <button type="button" class="primary" id="startBtn">בואו נתחיל למיין</button>
+    <p class="sub" id="wSub">101 פריטים · ימינה לקנות, שמאלה לא צריך כרגע</p>
+  </div>
+</div>
 <div class="app" id="app">
   <div class="top">
     <button class="iconbtn" id="backBtn" type="button" aria-label="חזרה לשלב הקודם">
@@ -219,22 +255,30 @@ const RAW=[
 ["סופר פארם","","שמן שקדים","","","","",""]
 ];
 const ITEMS=RAW.map((r,i)=>({id:"i"+i,cat:r[0],sub:r[1],name:r[2],qty:r[3],status:r[4],where:r[5],date:r[6],note:r[7]}));
-const WHERE=["מוצצים","שילב","מתנה ממשפחה","תרומה מחברים","אחר"];
+const WHERE=["מוצצים","שילב","סופר פארם","מתנה ממשפחה","תרומה מחברים","אחר"];
 const N=ITEMS.length;
 
 // state: answers + navigation history
 let S={answers:{},hist:[{i:0,step:"card"}]};
 const KEY="chokopop-swipe-v1";
 try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.hist&&s.hist.length)S=s}catch(e){}
-let db=null,saveT=null;
 function persist(){
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
-  clearTimeout(saveT);
-  saveT=setTimeout(()=>{if(db){db.doc("sorting/main").set({answers:S.answers,hist:S.hist,updatedAt:Date.now()}).catch(()=>{})}},700);
 }
 const cur=()=>S.hist[S.hist.length-1];
 function go(scr){S.hist.push(scr);persist();render()}
-function back(){if(S.hist.length>1){S.hist.pop();persist();render()}}
+function back(){
+  if(S.hist.length<=1)return;
+  S.hist.pop();
+  const c=cur(),it=ITEMS[c.i];
+  if(it){
+    const a=S.answers[it.id];
+    if(c.step==="card")delete S.answers[it.id];
+    else if(a&&c.step==="qty"){delete a.q;delete a.w;delete a.wNote}
+    else if(a&&c.step==="where"){delete a.w;delete a.wNote}
+  }
+  persist();render();
+}
 function nextFrom(i){go(i+1>=N?{i:N,step:"done"}:{i:i+1,step:"card"})}
 
 const $=id=>document.getElementById(id);
@@ -301,9 +345,9 @@ function bindSwipe(el,it){
 }
 
 function qtyHTML(it){
-  const a=S.answers[it.id]||{};const q=a.q;const custom=q&&![1,2,3].includes(q);
+  const a=S.answers[it.id]||{};const q=a.q;const custom=q&&!(q>=1&&q<=8);
   return `<div class="sheet"><p class="for">${esc(it.name)}</p><h2>כמות?</h2>
-    <div class="opts qty">${[1,2,3].map(n=>`<button type="button" class="opt${q===n?" sel":""}" data-q="${n}">${n}</button>`).join("")}
+    <div class="opts qty">${[1,2,3,4,5,6,7,8].map(n=>`<button type="button" class="opt${q===n?" sel":""}" data-q="${n}">${n}</button>`).join("")}
     <button type="button" class="opt${custom?" sel":""}" id="qOther">אחר</button></div>
     <div class="field" id="qField" ${custom?"":"hidden"}><input id="qInput" type="number" inputmode="numeric" min="1" placeholder="מספר" value="${custom?q:""}"><button type="button" class="primary" id="qOk">המשך</button></div>
     ${it.qty?`<div class="sugg">ברשימה המקורית: ${esc(it.qty)}</div>`:""}</div>`;
@@ -354,9 +398,9 @@ function renderSummary(){
     <h2>סיימנו למיין</h2>
     <div class="stats"><div class="stat"><b>${buys.length}</b><span>פריטים לרכוש</span></div><div class="stat"><b>${units}</b><span>יחידות</span></div><div class="stat"><b>${skips.length}</b><span>לא צריך כרגע</span></div></div>
     <div class="btns">
-      <button type="button" class="primary" id="mkSheet">יצירת גיליון Google Sheets</button>
+      <button type="button" class="primary" id="mkSheet">שליחת הסיכום (וואטסאפ / מייל)</button>
       <button type="button" class="secondary" id="dlCsv">הורדת קובץ CSV</button>
-      <button type="button" class="secondary" id="cpTsv">העתקה להדבקה בגיליון</button>
+      <button type="button" class="secondary" id="cpTsv">העתקה להדבקה ב-Google Sheets</button>
     </div>
     <div id="msg" class="status" hidden></div>
     ${Object.entries(groups).map(([k,l])=>grpHTML(k,l,true)).join("")}
@@ -376,25 +420,19 @@ function msg(html,err){const m=$("msg");m.hidden=false;m.className="status"+(err
 const stamp=()=>{const d=new Date();return d.getDate()+"."+(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2)};
 
 async function makeSheet(){
-  const b=$("mkSheet");b.disabled=true;msg("יוצר גיליון ב-Google Drive…");
+  const csv="\uFEFF"+toCSV(rows());
+  const name="סיכום-ציוד-צוקופופ-"+stamp()+".csv";
   try{
-    const mcp=await window.claude?.use?.("mcp");
-    if(!mcp)throw new Error("na");
-    const drive=await mcp.server("Google Drive");
-    const res=await drive.create_file({title:"סיכום מיון ציוד לצ׳וקופופ "+stamp(),textContent:toCSV(rows()),contentMimeType:"text/csv"});
-    let p=res&&res.payload!==undefined?res.payload:res;
-    if(typeof p==="string"){try{p=JSON.parse(p)}catch(e){}}
-    const f=p&&(p.file||p);
-    const url=f&&(f.viewUrl||f.webViewLink||(f.id?"https://docs.google.com/spreadsheets/d/"+f.id+"/edit":""));
-    msg(url?`הגיליון נוצר. <a href="${esc(url)}" target="_blank" rel="noopener">פתיחת הגיליון</a>`:"הגיליון נוצר בתיקיית Google Drive שלך.");
-  }catch(e){
-    msg("לא הצלחתי ליצור את הגיליון מכאן (צריך לאשר גישה ל-Google Drive). אפשר להוריד CSV או להעתיק ולהדביק בגיליון חדש.",true);
-  }finally{b.disabled=false}
+    const file=new File([csv],name,{type:"text/csv"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"סיכום מיון ציוד לצ׳וקופופ"});msg("נשלח.");return}
+    if(navigator.share){await navigator.share({title:"סיכום מיון ציוד לצ׳וקופופ",text:toTSV(rows())});msg("נשלח.");return}
+    throw 0;
+  }catch(e){if(e&&e.name==="AbortError")return;msg("השליחה לא נתמכת בדפדפן הזה. אפשר להוריד CSV או להעתיק.",true)}
 }
-async function downloadCSV(){
-  try{const dl=await window.claude?.use?.("downloads");if(!dl)throw 0;
-    await dl.save({filename:"chokopop-summary.csv",data:"﻿"+toCSV(rows())});msg("הקובץ נשמר.")}
-  catch(e){msg("ההורדה לא זמינה כאן. אפשר להשתמש ב׳העתקה להדבקה בגיליון׳.",true)}
+function downloadCSV(){
+  const blob=new Blob(["\uFEFF"+toCSV(rows())],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="chokopop-summary-"+stamp()+".csv";
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);msg("הקובץ ירד. אפשר לפתוח אותו ב-Google Sheets דרך קובץ > ייבוא.");
 }
 async function copyTSV(){
   const t=toTSV(rows());
@@ -407,25 +445,18 @@ $("backBtn").onclick=back;
 $("yesBtn").onclick=()=>{const c=cur();if(c.step==="card")fly(ITEMS[c.i],"buy")};
 $("noBtn").onclick=()=>{const c=cur();if(c.step==="card")fly(ITEMS[c.i],"skip")};
 document.addEventListener("keydown",e=>{
-  if(e.target.tagName==="INPUT")return;
+  if(e.target.tagName==="INPUT"||!$("welcome").hidden)return;
   const c=cur();
   if(c.step==="card"&&e.key==="ArrowRight")fly(ITEMS[c.i],"buy");
   else if(c.step==="card"&&e.key==="ArrowLeft")fly(ITEMS[c.i],"skip");
   else if(e.key==="Backspace"){e.preventDefault();back()}
 });
 render();
+(()=>{const n=Object.keys(S.answers).length,c=cur();
+  if(c.step==="done"){$("startBtn").textContent="לסיכום";$("wSub").textContent="המיון הושלם"}
+  else if(n){$("startBtn").textContent="להמשיך מאיפה שעצרנו";$("wSub").textContent=`מוינו ${n} מתוך ${N} פריטים`}
+  $("startBtn").onclick=()=>{$("welcome").hidden=true};})();
 
-// shared progress (so the sorting can continue on another device, and Claude can read the result)
-(async()=>{
-  try{
-    db=await window.claude?.use?.("db");if(!db)return;
-    const r=await db.doc("sorting/main").get();
-    const d=r&&(typeof r.data==="function"?r.data():(r.data!==undefined?r.data:r));
-    if(d&&d.answers&&d.hist&&d.hist.length&&(d.updatedAt||0)>(S.updatedAt||0)&&Object.keys(d.answers).length>=Object.keys(S.answers).length){
-      S={answers:d.answers,hist:d.hist};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();
-    }
-  }catch(e){}
-})();
 </script>
-
-</body></html>
+</body>
+</html>
