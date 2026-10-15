@@ -115,6 +115,14 @@ textarea{width:100%;box-sizing:border-box;height:120px;margin-top:8px;font:12px/
 @keyframes wUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
 @media (prefers-reduced-motion:reduce){.w-in,.w-heart{animation:none}}
+.who{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-family:var(--f-body);font-size:13px;font-weight:500;color:var(--accent);vertical-align:middle}
+.who:empty{display:none}
+.w-who{width:100%;display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.w-q{margin:0;font-weight:700;font-size:16px}
+.w-users{display:grid;gap:8px}
+.w-user{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 16px;font-size:16px;text-align:right}
+.w-user span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.w-who .primary{width:auto;margin-top:0;padding:12px 20px;font-size:16px}
 </style>
 </head>
 <body>
@@ -125,8 +133,12 @@ textarea{width:100%;box-sizing:border-box;height:120px;margin-top:8px;font:12px/
     <h1>מזל טוב!</h1>
     <p class="l2">בשעה טובה ❤️</p>
     <p class="l3">מאחל לכם רק טוב,<br><span class="sig">ספקו ❤️</span></p>
-    <button type="button" class="primary" id="startBtn">בואו נתחיל למיין</button>
-    <p class="sub" id="wSub">101 פריטים · ימינה לקנות, שמאלה לא צריך כרגע</p>
+    <div class="w-who">
+      <p class="w-q">מי ממיין/ת עכשיו?</p>
+      <div class="w-users" id="wUsers"></div>
+      <div class="field"><input id="nameInput" type="text" placeholder="השם שלך" autocomplete="given-name" maxlength="20"><button type="button" class="primary" id="startBtn">התחלה</button></div>
+    </div>
+    <p class="sub">101 פריטים · ימינה לקנות, שמאלה לא צריך כרגע<br>הבחירות של כל אחד נשמרות בנפרד</p>
   </div>
 </div>
 <div class="app" id="app">
@@ -135,7 +147,7 @@ textarea{width:100%;box-sizing:border-box;height:120px;margin-top:8px;font:12px/
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>חזרה
     </button>
     <div class="prog">
-      <div class="prog-row"><h1 class="brand">ציוד לצ׳וקופופ</h1><span id="count"></span></div>
+      <div class="prog-row"><h1 class="brand">ציוד לצ׳וקופופ <button type="button" class="who" id="whoBtn" aria-label="החלפת משתמש"><span id="who"></span></button></h1><span id="count"></span></div>
       <div class="bar"><i id="barFill"></i></div>
     </div>
   </div>
@@ -259,11 +271,29 @@ const WHERE=["מוצצים","שילב","סופר פארם","מתנה ממשפח�
 const N=ITEMS.length;
 
 // state: answers + navigation history
-let S={answers:{},hist:[{i:0,step:"card"}]};
-const KEY="chokopop-swipe-v1";
-try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.hist&&s.hist.length)S=s}catch(e){}
+const fresh=()=>({answers:{},hist:[{i:0,step:"card"}]});
+let S=fresh();
+const OLD_KEY="chokopop-swipe-v1",USERS_KEY="chokopop-users",LAST_KEY="chokopop-last-user";
+let USER="",KEY="";
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const getUsers=()=>{try{return JSON.parse(lsGet(USERS_KEY)||"[]")}catch(e){return[]}};
+const userData=u=>{try{const s=JSON.parse(lsGet("chokopop-u:"+u)||"null");return s&&s.hist&&s.hist.length?s:null}catch(e){return null}};
+function useUser(name){
+  USER=name;KEY="chokopop-u:"+name;
+  const users=getUsers();
+  if(!users.includes(name)){
+    // progress made before names existed belongs to the first person who signs in on this device
+    if(!users.length){const old=lsGet(OLD_KEY);if(old){lsSet(KEY,old);try{localStorage.removeItem(OLD_KEY)}catch(e){}}}
+    users.push(name);lsSet(USERS_KEY,JSON.stringify(users));
+  }
+  lsSet(LAST_KEY,name);
+  S=userData(name)||fresh();
+  $("who").textContent=name;
+  render();
+}
 function persist(){
-  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(KEY)lsSet(KEY,JSON.stringify(S));
 }
 const cur=()=>S.hist[S.hist.length-1];
 function go(scr){S.hist.push(scr);persist();render()}
@@ -289,7 +319,6 @@ function cardHTML(it,under){
   const a=S.answers[it.id];
   const bits=[];
   if(it.qty)bits.push(`<div>כמות ברשימה: <b>${esc(it.qty)}</b></div>`);
-  if(it.status==="יש")bits.push(`<div class="has">כבר יש${it.where?" · "+esc(it.where):""}${it.date?" · עד "+esc(it.date):""}</div>`);
   if(it.note)bits.push(`<div class="note">${linkify(it.note)}</div>`);
   if(a&&!under)bits.push(a.d==="buy"?`<div class="prev buy">בחרת: לרכוש · ${a.q||"?"} · ${esc(a.w==="אחר"?(a.wNote||"אחר"):(a.w||"?"))}</div>`:`<div class="prev skip">בחרת: לא צריך כרגע</div>`);
   return `<div class="card${under?" under":""}" ${under?"aria-hidden=\"true\"":'id="top"'}>
@@ -322,7 +351,7 @@ function render(){
 
 function decide(it,d){
   if(d==="skip"){S.answers[it.id]={d:"skip"};nextFrom(cur().i)}
-  else{const prev=S.answers[it.id];S.answers[it.id]=Object.assign({},prev&&prev.d==="buy"?prev:{},{d:"buy"});go({i:cur().i,step:"qty"})}
+  else{S.answers[it.id]={d:"buy"};go({i:cur().i,step:"qty"})}
 }
 function fly(it,d){
   const el=$("top");if(!el){decide(it,d);return}
@@ -378,12 +407,12 @@ function bindWhere(it){
 // ---------- summary ----------
 const whereLabel=a=>a.w==="אחר"?("אחר: "+(a.wNote||"")):a.w;
 function rows(){
-  const H=["החלטה","איפה רוכשים","פירוט (אחר)","כמות","פריט","קטגוריה","תת-קטגוריה","סטטוס בגיליון המקורי","כמות בגיליון המקורי","הערה"];
+  const H=["החלטה","איפה רוכשים","פירוט (אחר)","כמות","פריט","קטגוריה","תת-קטגוריה","כמות בגיליון המקורי","הערה"];
   const order=w=>{const k=WHERE.indexOf(w);return k<0?9:k};
   const list=ITEMS.map((it,idx)=>({it,idx,a:S.answers[it.id]}))
     .sort((x,y)=>{const bx=x.a&&x.a.d==="buy"?0:1,by=y.a&&y.a.d==="buy"?0:1;if(bx!==by)return bx-by;
       if(!bx){const d=order(x.a.w)-order(y.a.w);if(d)return d}return x.idx-y.idx});
-  return [H,...list.map(({it,a})=>[!a?"לא מוין":a.d==="buy"?"לרכוש":"לא צריך כרגע",a&&a.d==="buy"?a.w||"":"",a&&a.w==="אחר"?a.wNote||"":"",a&&a.d==="buy"?String(a.q||""):"",it.name,it.cat,it.sub,it.status,it.qty,it.note])];
+  return [H,...list.map(({it,a})=>[!a?"לא מוין":a.d==="buy"?"לרכוש":"לא צריך כרגע",a&&a.d==="buy"?a.w||"":"",a&&a.w==="אחר"?a.wNote||"":"",a&&a.d==="buy"?String(a.q||""):"",it.name,it.cat,it.sub,it.qty,it.note])];
 }
 const toCSV=r=>r.map(row=>row.map(v=>{v=String(v??"");return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(",")).join("\n");
 const toTSV=r=>r.map(row=>row.map(v=>String(v??"").replace(/[\t\n]/g," ")).join("\t")).join("\n");
@@ -395,7 +424,7 @@ function renderSummary(){
   const units=buys.reduce((s,it)=>s+(S.answers[it.id].q||0),0);
   const grpHTML=(title,list,showQ)=>`<div class="grp"><h3><span>${esc(title)}</span><span>${list.length}</span></h3>${list.map(it=>`<button type="button" class="row" data-jump="${ITEMS.indexOf(it)}"><span>${esc(it.name)}</span>${showQ?`<span class="q">× ${S.answers[it.id].q}</span>`:""}</button>`).join("")}</div>`;
   $("deck").innerHTML=`<div class="sum">
-    <h2>סיימנו למיין</h2>
+    <h2>${esc(USER)}, סיימת למיין</h2>
     <div class="stats"><div class="stat"><b>${buys.length}</b><span>פריטים לרכוש</span></div><div class="stat"><b>${units}</b><span>יחידות</span></div><div class="stat"><b>${skips.length}</b><span>לא צריך כרגע</span></div></div>
     <div class="btns">
       <button type="button" class="primary" id="mkSheet">שליחת הסיכום (וואטסאפ / מייל)</button>
@@ -421,17 +450,17 @@ const stamp=()=>{const d=new Date();return d.getDate()+"."+(d.getMonth()+1)+"."+
 
 async function makeSheet(){
   const csv="\uFEFF"+toCSV(rows());
-  const name="סיכום-ציוד-צוקופופ-"+stamp()+".csv";
+  const name="סיכום-ציוד-צוקופופ-"+USER+"-"+stamp()+".csv";
   try{
     const file=new File([csv],name,{type:"text/csv"});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"סיכום מיון ציוד לצ׳וקופופ"});msg("נשלח.");return}
-    if(navigator.share){await navigator.share({title:"סיכום מיון ציוד לצ׳וקופופ",text:toTSV(rows())});msg("נשלח.");return}
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"סיכום מיון ציוד לצ׳וקופופ – "+USER});msg("נשלח.");return}
+    if(navigator.share){await navigator.share({title:"סיכום מיון ציוד לצ׳וקופופ – "+USER,text:toTSV(rows())});msg("נשלח.");return}
     throw 0;
   }catch(e){if(e&&e.name==="AbortError")return;msg("השליחה לא נתמכת בדפדפן הזה. אפשר להוריד CSV או להעתיק.",true)}
 }
 function downloadCSV(){
   const blob=new Blob(["\uFEFF"+toCSV(rows())],{type:"text/csv;charset=utf-8"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="chokopop-summary-"+stamp()+".csv";
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="chokopop-summary-"+USER+"-"+stamp()+".csv";
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);msg("הקובץ ירד. אפשר לפתוח אותו ב-Google Sheets דרך קובץ > ייבוא.");
 }
 async function copyTSV(){
@@ -452,10 +481,20 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Backspace"){e.preventDefault();back()}
 });
 render();
-(()=>{const n=Object.keys(S.answers).length,c=cur();
-  if(c.step==="done"){$("startBtn").textContent="לסיכום";$("wSub").textContent="המיון הושלם"}
-  else if(n){$("startBtn").textContent="להמשיך מאיפה שעצרנו";$("wSub").textContent=`מוינו ${n} מתוך ${N} פריטים`}
-  $("startBtn").onclick=()=>{$("welcome").hidden=true};})();
+function showWelcome(){
+  const users=getUsers();
+  $("wUsers").innerHTML=users.map(u=>{const d=userData(u);const n=d?Object.keys(d.answers).length:0;const done=d&&d.hist[d.hist.length-1].step==="done";
+    return `<button type="button" class="w-user" data-u="${esc(u)}"><b>${esc(u)}</b><span>${done?"המיון הושלם":n?`להמשיך · ${n}/${N}`:"להתחיל"}</span></button>`}).join("");
+  $("wUsers").hidden=!users.length;
+  $("nameInput").value="";
+  document.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>enter(b.dataset.u));
+  $("welcome").hidden=false;
+}
+function enter(name){name=(name||"").trim();if(!name){$("nameInput").focus();return}useUser(name);$("welcome").hidden=true}
+$("startBtn").onclick=()=>enter($("nameInput").value);
+$("nameInput").onkeydown=e=>{if(e.key==="Enter")enter($("nameInput").value)};
+$("whoBtn").onclick=showWelcome;
+showWelcome();
 
 </script>
 </body>
